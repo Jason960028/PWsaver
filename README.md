@@ -1,6 +1,6 @@
 # 🔒 PwKeeper - Password Manager
 
-A secure, modern password manager built with Python and PySide6, featuring a beautiful dark-themed card interface and military-grade encryption.
+A secure, modern password manager built with Python and PySide6, featuring a beautiful dark-themed card interface and industry-standard encryption.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![PySide6](https://img.shields.io/badge/PySide6-Qt-green.svg)
