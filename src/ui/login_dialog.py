@@ -14,7 +14,8 @@ class LoginDialog(QDialog):
         super().__init__(parent)
         self.is_setup = is_setup
         self.setWindowTitle("🔒 PwKeeper - " + ("Setup" if is_setup else "Login"))
-        self.setFixedSize(400, 300 if is_setup else 220)
+        self.setMinimumSize(400, 300)
+        self.resize(400, 300)
         self.verified_password = None
         self.password_visible = False
 

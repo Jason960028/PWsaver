@@ -1,8 +1,7 @@
 from functools import partial
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget,
-    QListWidget, QTableWidget, QTableWidgetItem,
-    QPushButton, QLineEdit, QHeaderView, QMessageBox, QToolButton
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QListWidget, QPushButton, QLineEdit, QMessageBox, QToolButton, QLabel
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -19,14 +18,11 @@ class MainWindow(QMainWindow):
         self.db_manager = db_manager
         self.encryption_key = encryption_key
 
-        # Initialize theme manager
-        saved_theme = self.db_manager.get_preference('theme', 'light')
-        self.theme_manager = ThemeManager(saved_theme)
-
-        # View mode (table or card)
-        self.view_mode = self.db_manager.get_preference('view_mode', 'table')
+        # Initialize theme manager - always use dark mode
+        self.theme_manager = ThemeManager('dark')
 
         self.setWindowTitle("🔒 PwKeeper - Password Manager")
+        self.setMinimumSize(800, 600)
         self.resize(1000, 700)
 
         self.central_widget = QWidget()
@@ -57,10 +53,11 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(content_layout)
 
     def _create_header_bar(self, parent_layout):
-        """Create top header bar with app title and theme toggle"""
+        """Create top header bar with app title"""
         header = QWidget()
         header.setObjectName("headerBar")
-        header.setFixedHeight(60)
+        header.setMinimumHeight(60)
+        header.setMaximumHeight(80)
 
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(20, 0, 20, 0)
@@ -80,35 +77,15 @@ class MainWindow(QMainWindow):
         title_layout.addStretch()
 
         header_layout.addLayout(title_layout)
-
         header_layout.addStretch()
-
-        # View mode toggle
-        self.view_toggle_btn = QToolButton()
-        self.view_toggle_btn.setText("🗃️" if self.view_mode == 'table' else "📊")
-        self.view_toggle_btn.setFixedSize(40, 40)
-        self.view_toggle_btn.setCursor(Qt.PointingHandCursor)
-        self.view_toggle_btn.setObjectName("iconBtn")
-        self.view_toggle_btn.setToolTip("Toggle View Mode")
-        self.view_toggle_btn.clicked.connect(self.toggle_view_mode)
-        header_layout.addWidget(self.view_toggle_btn)
-
-        # Theme toggle button
-        self.theme_toggle_btn = QToolButton()
-        self.theme_toggle_btn.setText("🌙" if self.theme_manager.current_theme == 'light' else "☀️")
-        self.theme_toggle_btn.setFixedSize(40, 40)
-        self.theme_toggle_btn.setCursor(Qt.PointingHandCursor)
-        self.theme_toggle_btn.setObjectName("iconBtn")
-        self.theme_toggle_btn.setToolTip("Toggle Dark/Light Mode")
-        self.theme_toggle_btn.clicked.connect(self.toggle_theme)
-        header_layout.addWidget(self.theme_toggle_btn)
 
         parent_layout.addWidget(header)
 
     def _create_sidebar(self, parent_layout):
         """Create sidebar with category filters"""
         self.sidebar = QListWidget()
-        self.sidebar.setFixedWidth(200)
+        self.sidebar.setMinimumWidth(150)
+        self.sidebar.setMaximumWidth(250)
 
         # Add categories with icons
         categories = [
@@ -131,7 +108,7 @@ class MainWindow(QMainWindow):
         parent_layout.addWidget(self.sidebar)
 
     def _create_content_area(self, parent_layout):
-        """Create main content area with search, actions, and data view"""
+        """Create main content area with search, actions, and card view"""
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
         right_layout.setContentsMargins(20, 20, 20, 20)
@@ -148,7 +125,7 @@ class MainWindow(QMainWindow):
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText(f"{ICONS['search']} Search by site or username...")
         self.search_input.setMinimumHeight(40)
-        self.search_input.textChanged.connect(self.search_table)
+        self.search_input.textChanged.connect(self.search_credentials)
         search_container.addWidget(self.search_input)
 
         # Clear search button
@@ -179,140 +156,24 @@ class MainWindow(QMainWindow):
 
         right_layout.addLayout(top_bar)
 
-        # Stacked widget for table/card view
-        self.view_stack = QStackedWidget()
-
-        # Table view
-        self._create_table_view()
-        self.view_stack.addWidget(self.table)
-
-        # Card view
+        # Card view only
         self.card_view = CardViewWidget()
         self.card_view.copy_password.connect(self.copy_password)
         self.card_view.edit_credential.connect(self.edit_credential)
         self.card_view.delete_credential.connect(self.delete_credential)
         self.card_view.toggle_favorite.connect(self.toggle_favorite)
-        self.view_stack.addWidget(self.card_view)
 
-        # Set initial view
-        self.view_stack.setCurrentIndex(0 if self.view_mode == 'table' else 1)
-
-        right_layout.addWidget(self.view_stack)
+        right_layout.addWidget(self.card_view)
 
         parent_layout.addWidget(right_widget)
-
-    def _create_table_view(self):
-        """Create table view for credentials"""
-        self.table = QTableWidget()
-        self.table.setColumnCount(6)
-        self.table.setHorizontalHeaderLabels(["Category", "Site Name", "Username", "⭐", "Actions", ""])
-
-        # Hide vertical header
-        self.table.verticalHeader().setVisible(False)
-
-        # Column resize modes
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)  # Category
-        header.setSectionResizeMode(1, QHeaderView.Stretch)           # Site
-        header.setSectionResizeMode(2, QHeaderView.Stretch)           # Username
-        header.setSectionResizeMode(3, QHeaderView.Fixed)             # Favorite
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Actions (auto-resize)
-        header.setSectionResizeMode(5, QHeaderView.Fixed)             # Delete
-
-        self.table.setColumnWidth(3, 50)   # Favorite column
-        self.table.setColumnWidth(5, 50)   # Delete column
-
-        # Selection behavior
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setSelectionMode(QTableWidget.SingleSelection)
-        self.table.setAlternatingRowColors(True)
-
-        # Row height
-        self.table.verticalHeader().setDefaultSectionSize(50)
 
     def load_data(self):
         """Load credentials from database"""
         self.all_data = self.db_manager.get_all_credentials_extended()
-        self.populate_views(self.all_data)
+        self.populate_view(self.all_data)
 
-    def populate_views(self, data):
-        """Populate both table and card views with data"""
-        # Populate table view
-        self.table.setRowCount(0)
-
-        if not data:
-            # Show empty state in table
-            self.table.setRowCount(1)
-            empty_item = QTableWidgetItem("No credentials found. Click '+ Add Credential' to get started.")
-            empty_item.setTextAlignment(Qt.AlignCenter)
-            self.table.setItem(0, 0, empty_item)
-            self.table.setSpan(0, 0, 1, 6)
-        else:
-            for i, row in enumerate(data):
-                # row: (id, category, site, user, enc_pass, is_favorite, url, notes)
-                cred_id, category, site, user, enc_pass = row[0], row[1], row[2], row[3], row[4]
-                is_favorite = row[5] if len(row) > 5 else 0
-
-                self.table.insertRow(i)
-
-                # Category with icon
-                category_icons = {
-                    'General': '📋',
-                    'Social': '👥',
-                    'Work': '💼',
-                    'Finance': '💰',
-                    'Entertainment': '🎮'
-                }
-                cat_text = f"{category_icons.get(category, '📋')} {category}"
-                cat_item = QTableWidgetItem(cat_text)
-                self.table.setItem(i, 0, cat_item)
-
-                # Site name
-                self.table.setItem(i, 1, QTableWidgetItem(site))
-
-                # Username
-                self.table.setItem(i, 2, QTableWidgetItem(user))
-
-                # Favorite button
-                btn_favorite = QPushButton("⭐" if is_favorite else "☆")
-                btn_favorite.setObjectName("iconBtn")
-                btn_favorite.setCursor(Qt.PointingHandCursor)
-                btn_favorite.setToolTip("Toggle Favorite")
-                btn_favorite.clicked.connect(partial(self.toggle_favorite, cred_id))
-                self.table.setCellWidget(i, 3, btn_favorite)
-
-                # Action buttons container
-                action_widget = QWidget()
-                action_layout = QHBoxLayout(action_widget)
-                action_layout.setContentsMargins(0, 0, 0, 0)  # Remove all margins
-                action_layout.setSpacing(2)  # Minimal spacing between buttons
-
-                # Copy button
-                btn_copy = QPushButton(f"{ICONS['copy']} Copy")
-                btn_copy.setCursor(Qt.PointingHandCursor)
-                btn_copy.setToolTip("Copy Password")
-                btn_copy.clicked.connect(partial(self.copy_password, enc_pass))
-                action_layout.addWidget(btn_copy)
-
-                # Edit button
-                btn_edit = QPushButton(f"{ICONS['edit']}")
-                btn_edit.setObjectName("iconBtn")
-                btn_edit.setCursor(Qt.PointingHandCursor)
-                btn_edit.setToolTip("Edit Credential")
-                btn_edit.clicked.connect(partial(self.edit_credential, cred_id))
-                action_layout.addWidget(btn_edit)
-
-                self.table.setCellWidget(i, 4, action_widget)
-
-                # Delete button
-                btn_delete = QPushButton(ICONS['delete'])
-                btn_delete.setObjectName("dangerBtn")
-                btn_delete.setCursor(Qt.PointingHandCursor)
-                btn_delete.setToolTip("Delete Credential")
-                btn_delete.clicked.connect(partial(self.delete_credential, cred_id))
-                self.table.setCellWidget(i, 5, btn_delete)
-
-        # Populate card view
+    def populate_view(self, data):
+        """Populate card view with data"""
         self.card_view.set_data(data)
 
     def add_credential(self):
@@ -426,9 +287,9 @@ class MainWindow(QMainWindow):
             category = cat_text.split(' ', 1)[1] if ' ' in cat_text else cat_text
             filtered = [r for r in self.all_data if r[1] == category]
 
-        self.populate_views(filtered)
+        self.populate_view(filtered)
 
-    def search_table(self, text):
+    def search_credentials(self, text):
         """Search credentials by site name or username"""
         text = text.lower()
         if not text:
@@ -439,32 +300,9 @@ class MainWindow(QMainWindow):
             r for r in self.all_data
             if text in r[2].lower() or text in r[3].lower()  # site or username
         ]
-        self.populate_views(filtered)
-
-    def toggle_theme(self):
-        """Toggle between light and dark themes"""
-        self.theme_manager.toggle_theme()
-        self.apply_theme()
-        self.db_manager.set_preference('theme', self.theme_manager.current_theme)
-
-        # Update button icon
-        self.theme_toggle_btn.setText("🌙" if self.theme_manager.current_theme == 'light' else "☀️")
-
-    def toggle_view_mode(self):
-        """Toggle between table and card view"""
-        self.view_mode = 'card' if self.view_mode == 'table' else 'table'
-        self.view_stack.setCurrentIndex(0 if self.view_mode == 'table' else 1)
-        self.db_manager.set_preference('view_mode', self.view_mode)
-
-        # Update button icon
-        self.view_toggle_btn.setText("🗃️" if self.view_mode == 'table' else "📊")
-        self.view_toggle_btn.setToolTip(f"Switch to {'Table' if self.view_mode == 'card' else 'Card'} View")
+        self.populate_view(filtered)
 
     def apply_theme(self):
-        """Apply current theme stylesheet"""
+        """Apply dark theme stylesheet"""
         stylesheet = self.theme_manager.generate_stylesheet()
         self.setStyleSheet(stylesheet)
-
-
-# Import QLabel (was missing)
-from PySide6.QtWidgets import QLabel

@@ -531,6 +531,98 @@ QMessageBox {{
 QMessageBox QLabel {{
     color: {theme['text_primary']};
 }}
+
+/* ===== HEADER BAR ===== */
+QWidget#headerBar {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 {theme['gradient_start']}, stop:1 {theme['gradient_end']});
+    border-bottom: 2px solid {theme['accent_primary']};
+}}
+
+QWidget#headerBar QLabel {{
+    color: {theme['text_inverse']};
+}}
+
+/* ===== CARD VIEW ===== */
+QFrame#credentialCard {{
+    background-color: {theme['bg_elevated']};
+    border: 1px solid {theme['border_light']};
+    border-radius: 12px;
+    padding: 4px;
+}}
+
+QFrame#credentialCard:hover {{
+    border: 2px solid {theme['accent_primary']};
+    background-color: {theme['bg_elevated']};
+}}
+
+QLabel#categoryBadge {{
+    background-color: {theme['bg_secondary']};
+    color: {theme['text_secondary']};
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+}}
+
+QLabel#cardTitle {{
+    font-size: 18px;
+    font-weight: 700;
+    color: {theme['text_primary']};
+}}
+
+QFrame#cardDivider {{
+    color: {theme['border_light']};
+}}
+
+QLabel#cardUsername {{
+    font-size: 11px;
+    color: {theme['text_secondary']};
+}}
+
+QLabel#cardUrl {{
+    font-size: 10px;
+    color: {theme['accent_primary']};
+    text-decoration: underline;
+}}
+
+QLabel#cardUrl:hover {{
+    color: {theme['gradient_start']};
+}}
+
+QLabel#cardNotes {{
+    font-size: 9px;
+    color: {theme['text_tertiary']};
+    font-style: italic;
+}}
+
+QPushButton#cardActionBtn {{
+    background-color: {theme['bg_secondary']};
+    border: 1px solid {theme['border_light']};
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: {theme['text_primary']};
+    font-weight: 500;
+    font-size: 12px;
+}}
+
+QPushButton#cardActionBtn:hover {{
+    background-color: {theme['hover_bg']};
+    border-color: {theme['accent_primary']};
+}}
+
+/* ===== EMPTY STATE ===== */
+QLabel#emptyStateTitle {{
+    font-size: 18px;
+    font-weight: 700;
+    color: {theme['text_primary']};
+}}
+
+QLabel#emptyStateHint {{
+    font-size: 12px;
+    color: {theme['text_tertiary']};
+}}
 """
         return qss
 

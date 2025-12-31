@@ -12,7 +12,8 @@ class PasswordGeneratorDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("🎲 Generate Password")
-        self.setFixedSize(450, 450)
+        self.setMinimumSize(400, 420)
+        self.resize(450, 450)
         self.generated_password = ""
 
         self._init_ui()
